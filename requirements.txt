@@ -1,0 +1,5 @@
+python-pptx>=1.0
+Pillow
+numpy
+opencv-python
+pywin32; sys_platform == "win32"
