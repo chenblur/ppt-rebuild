@@ -21,6 +21,7 @@ single page in ~3 seconds while iterating.
 """
 import argparse
 import glob
+import re
 import os
 import shutil
 import sys
@@ -77,6 +78,7 @@ BUILD_TMPL = '''"""build — assemble every page module into one deck.
     python build.py --render   ... and render every slide to ../out/final/
 """
 import glob
+import re
 import os
 import sys
 
@@ -87,8 +89,14 @@ sys.path.insert(0, HERE)
 import slidekit as K
 import devbox
 
-PAGES = sorted(os.path.basename(p)[:-3] for p in glob.glob(os.path.join(HERE, "p*.py"))
-               if not os.path.basename(p).startswith("_"))
+def page_order(name):
+    return [int(part) if part.isdecimal() else part.casefold()
+            for part in re.split(r"([0-9]+)", name)]
+
+
+PAGES = sorted((os.path.basename(p)[:-3] for p in glob.glob(os.path.join(HERE, "p*.py"))
+                if not os.path.basename(p).startswith("_")),
+               key=page_order)
 
 
 def build_deck():
@@ -185,7 +193,11 @@ def main():
     refs = []
     for pat in ("*.jpg", "*.jpeg", "*.png"):
         refs += glob.glob(os.path.join(src_dir, pat))
-    refs = sorted(r for r in refs if "_grid" not in r and "_zoom" not in r and "_poly" not in r)
+    refs = [r for r in refs if "_grid" not in r and "_zoom" not in r and "_poly" not in r]
+    refs.sort(key=lambda path: [
+        int(part) if part.isdecimal() else part.casefold()
+        for part in re.split(r"([0-9]+)", os.path.basename(path))
+    ])
     if not refs:
         raise SystemExit(f"no reference images in {src_dir}")
     for r in refs:
